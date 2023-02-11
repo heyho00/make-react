@@ -34,3 +34,110 @@ module.exports = {
 }
 
 ```
+
+dev server는 vscode extension Live-server를 사용한다.
+
+웹팩 설정을 이정도 하고 babel 추가설정을 해준다.
+
+```js
+// babel.config.json 생성
+{
+    "presets": [
+        "@babel/preset-env"
+    ]
+}
+
+그리고 dev server를 세팅한다. 웹서버 띄우는거.
+// webpack.config.js로 돌아와
+devServer: {
+    compress: true,
+    port: 9999
+  },
+
+추가해주고 번들링을 실행시켜야하니 package.json script 추가해준다.
+"scripts": {
+    "build": "webpack", // config파일 만들어놔서 자동으로 찾아줌.
+그런데 이렇게 webpack 커맨드만 실행하면 번들링만 일어남.
+그럴때 dev server를 띄우는데 필요한 "dev": "webpack serve", 추가해줌.
+
+npm run dev 해보면 번들링 됨.
+9999포트로 가본다.
+localhost:9999
+이렇게 하면 실제로 거의 메모리에 내용이 들어가있고
+실시간으로 바뀌는 내용들이 바뀌는 기능을 제공해줌.
+
+dev 종료후 npm run build 해보면,
+번들링 되어 dist 디렉토리가 생기고 실행은 되지 않음.
+dist안의 index.html에 들어가보면
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>react를 만들어 보자</title>
+<script defer src="bundle.js"></script> 
+</head>
+
+<body>
+    <div id="root"></div>
+    <script src="app.js" type="module"></script> // <---얘는 지워줘야한다.
+</body>
+
+번들링 되기 전 index.html에서 지우고 npm run build 해서 다시 dist에 app.js가 나오지 않도록 한다.
+
+```
+
+번들링까지 세팅 했다.
+
+앞으로 서비스가 커지고 코드가 많아질테니 구조를 좀 잡고 갈텐데,
+
+번들링 파일과 실제 다룰 코드를 구분하기 위해
+
+src 디렉토리를 만들고 app.js를 넣는다.
+
+실제 앱에서는 React에서 제공하는 기능과 실제 우리가 만드는 앱은 코드가 분리되어 있어야 하니,
+
+현재 app.js는 다 기능을 넣어 놨으니까
+
+react.js 만들어 react가 제공함직한 코드들을 분리한다.
+
+(createDom 함수) 옮기고 export 해준다.
+
+app.js에서 import해서 쓴다.
+
+app.js - vdom에서
+
+```js
+   props: {
+            style: 'color:red'
+          },
+```
+
+프롭스 추가해주고 이걸 처리할 코드를 createDOM에 작성해줌.
+
+```js
+//createDOM
+...전략
+Object.entries(node.props)
+        .forEach(([name, value]) => element.setAttribute(name, value))
+...후략
+```
+
+이 때 npm run build 하면 에러난다. 디렉토리구조 아까 바꿨으니,.
+
+```js
+// webpack.config.js
+...전략
+entry: './src/app.js', // 이렇게 수정해준다.
+
+...후략
+
+```
+
+기존 렌더방식도 리액트가 해주는 것처럼 바꾼다.
+
+```js
+// document
+//   .querySelector('#root')
+//   .appendChild(createDOM(vdom));
+
+render(vdom, document.querySelector('#root'))
+```
