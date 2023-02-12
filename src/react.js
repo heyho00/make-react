@@ -15,14 +15,20 @@ export function createDOM(node) {
 /**실제 node나 element를 만드는게 아니라 객체를 만드는 함수 */
 export function createElement(tag, props, ...children) {
     props = props || {}
-    return {
-        tag,
-        props,
-        children
+
+    if (typeof tag === 'function') {
+        if (children.length) {
+            return tag({
+                ...props,
+                children: children.length === 1 ? children[0] : children
+            })
+        }
+        return tag(props)
+    } else {
+        return { tag, props, children }
     }
 }
 
 export function render(vdom, container) {
-    container
-        .appendChild(createDOM(vdom));
+    container.appendChild(createDOM(vdom));
 }

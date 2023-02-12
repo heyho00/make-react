@@ -304,3 +304,68 @@ render(vdom2, document.querySelector('#root'))
 똑같은 제약 사항이 react에도 있다.
 
 React가 코드상에서 쓰이지 않아도 상단에 import React 해주는 이유이다.
+
+<br>
+
+## React가 한 단계 더 나아간 점
+
+`사용자 component`를 만들 수 있는 기능을 제공.
+
+함수형, 클래스형 방법을 제공.
+
+```js
+function Title() {
+  return (
+    <h1>react 만들기</h1>
+  )
+}
+
+const vdom2 = <p>
+  <Title />
+```
+
+이렇게 jsx로 이용이 가능한데, 이렇게만하면 에러난다.
+
+여기서도 babel에 의해 컴파일 된 코드를 보자.
+
+```js
+...전략
+const vdom2 = /*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement(Title, null), // 첫번째 인수로 string이 아닌 Title이 전달된다.
+...후략
+```
+
+Title이 함수인지를 체크해서 함수라면 호출을 해주면,
+
+그리고 그 함수가 jsx를 반환한다면 결과적으로 똑같이 동작하게 할 수 있다.
+
+jsx 태그 이름이 대문자로 시작되면 이것을 문자열로 처리하지않고 자바스크립트 값으로 취급할꺼고
+
+그 값은 함수여야하고 jsx를 리턴하는 createElement의 리턴 결과값이어야 한다는 약속을 갖고있다.
+
+바로 이 이유때문에 대문자로 컴포넌트를 만들지 않으면 리액트는 알지 못한다.
+
+```js
+export function createElement(tag, props, ...children) {
+    props = props || {}
+
+    if (typeof tag === 'function') { // 전달받은 tag의 타입이 함수면 실행시켜서 jsx를 리턴받아라.
+        return tag()
+    } else {
+        return { tag, props, children }
+    }
+
+```
+
+이렇게 하면 또 에러가 해결 되었다.
+
+반드시 대문자로 시작해야하고, jsx를 return 해야하는 일종의 컨벤션, 제약사항이 생기는 점이 있지만,
+
+jsx로 html처럼 짜여진 코드가 주는 장점이 더 많다.
+
+<br>
+
+## props
+
+사용자 컴포넌트에 props, children을 넘겨 사용할 수 있도록
+
+helper 함수인 createElement를 수정해줬다. commit 변경사항 보면됨.
