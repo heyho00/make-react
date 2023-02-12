@@ -381,3 +381,100 @@ function Item(props) {
 ```
 
 props를 넘겨 이용할 수 있도록 createElement 함수를 만들어놨기 때문에 바로 적용된다.
+
+<br>
+
+## virtual DOM
+
+react가 전면에 내놓은 기능중 하나인 `virtual DOM`.
+
+여기 만들어놓은 구조물로 보면 `createElement로 만들어놓은 객체`일 수 있다.
+
+정확히는 딱 그 객체라기보다 `virtual DOM`을 만들기 위한 근간이 되는 데이터. `메타 데이터` 라고 할 수 있다.
+
+<br>
+
+DOM을 직접 제어하지않고 더 쉬운 구조물로 개발할 수 있게끔 중간의 DOM 처리는 리액트에 맡기고 JSX라고 하는 DOM과 비슷한,
+
+`컴포넌트 베이스의 개발 방식`을 만들어준 환경이 virtual DOM 이라고 할 수 있겠다.
+
+어떤 맥락으로 동작하는지, 어떤 의미를 가지는지 살펴보자.
+
+<br>
+
+createElement 함수가 return 하는 {tag, props, children} 객체가 vdom의 input data 역할을 함.
+
+이 객체는 트리 구조를 가지고 있고, 루트를 기준으로 자식요소들을 갖는 특징이 있다. 이 단일 객체를 가지고 react는 `real dom`을 만든다.
+
+여기 코드에서는 `createDom`이라는 함수가 만든다.
+
+당연히 프로덕션 환경의 리액트 에서는 이거보다 훨씬 복잡하겠다.
+
+이 createDom 의 역할을 하는 코드가 react에 있을 것이다.
+
+react 이전에 개발을 할 때는 createDom의 역할을 하는 코드를 개발자가 직접 작성했다.
+
+react 에서는 이걸 작성하는게 아니라 vdom을 `createDom을` 이용해 만드는데 또 createDom 보다도 훨씬 간단한 jsx를 이용해 만든다.
+
+그런데 이 구조에서 react는 virtual dom 이라고 하는거를 어떻게 장점으로 부각시켰을까.
+
+바로 **ui가 업데이트될때 vdom의 장점을 극대화** 하는 측면을 부각시켰다.
+
+```js
+// react.js의 일부분
+export function render(vdom, container) {
+    container.appendChild(createDOM(vdom));
+}
+
+// app.js 의 일부분
+render(vdom2, document.querySelector('#root'))
+```
+
+ui가 업데이트 된다는건 `render` 함수가 새로 돈다는 것.
+
+render가 새로 돈다는 건 vdom이 이미 새롭게 만들어져 있고 기존의 DOM과 교체되어야 한다는 것.
+
+근데 react 입장에서는 이미 기존의 `dom`과 dom으로 만들게 된 `virtual DOM 객체`를 가지고 있다.
+
+그리고 새로운 입력으로 받는 `새로운 vdom`도 가지고 있고.
+
+real dom에 있는 변경사항과 실제 객체의 변경사항을 추적하기는 굉장히 어렵다.
+
+리얼돔은 리액트가 변경했을수도, 사용자가 변경했을수도 있고 다양하게 변경이 있을 수 있기 때문에 온전히 모든걸 리액트가 파악하긴 힘들다.
+
+real dom과 real dom을 만든 vdom도 갖고있고 새로운 vdom 입력을 받은 상태에서
+
+**리액트는 dom을 비교하는게 아니라 객체 대 객체를 비교할 수 있게 된 것.** 🎊
+
+dom을 비교하는것 보다 엄청 비용이 적은 프로세스이기 때문에 두 객체를 비교해 다른 점만 `real dom`에 반영할 수 있는 구조를 만들게 된 것.
+
+이 구조 때문에 리액트가 시장에 자리매김할 수 있었던 것이다.
+
+그 구조를 만들 수 있는, 진입점이 바로 이 `render` 메소드인데 현재는 `vdom` 받아서 `appendChild` 하고 있는데 살짝 바꿔보겠다.
+
+```js
+export const render = (function () {
+    let prevDom = null
+
+    return function (vdom, container) {
+        if (prevDom === null) {
+            prevDom = vdom
+        }
+        //diff 객체 수준에서의 비교
+
+        container.appendChild(createDOM(vdom));
+    }
+})()
+```
+
+기존 vdom과 새로 입력받은 vdom을 비교하기위해 render 함수를 조금 수정했다.
+
+이 함수는 즉시실행 함수로 내부의 함수를 return하도록 만들어 closure를 만들었다.
+
+이렇게하면 prevDom은 clousre에 갇혀 바깥에선 참조하지 못하고 내부적으로는 매번 업데이트 때마다 비교할 수 있는 로직을 삽입할 수 있도록 구조가 나온다.
+
+그래서 closure에 숨겨놓을 이전 돔, prevDom을 새로운것과 비교를 한 뒤 어떻게 할지 결정하면 된다.
+
+기존에 바로 리얼돔으로 만들었던걸, 이제는 prevDom이 있는지 파악해 있으면 비교를 하고 변경이 있으면 새 vdom을 createDom에 전달한다.
+
+virtual dom을 실제로 구현해보기는 일단 하지 않겠다. 신기하게도 virtual dom을 구현하는 라이브러리도 많다.
