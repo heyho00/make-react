@@ -14,11 +14,8 @@ export function createDOM(node) {
 
 /**실제 node나 element를 만드는게 아니라 객체를 만드는 함수 */
 export function createElement(tag, props, ...children) {
+    props = props || {}
     return {
-        // tag:tag,
-        // props:props,
-        // children:children
-        //단축표현 사용
         tag,
         props,
         children

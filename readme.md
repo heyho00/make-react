@@ -166,3 +166,141 @@ vdom을 만들었는데,.
 세개의 속성을 가진 객체의 단순 반복이라는 점을 이용해
 
 세 속성을 가진 객체를 생성하는 함수를 만들어 반복 호출해 vdom 구조를 만들어 볼 수 있겠다.
+
+<br>
+
+## createElement 함수로 vdom 객체를 만들어봤지만, 아직 완전히 편리하지 않다
+
+'html 태깅하듯이 하는게 가장 편리하겠다' 라는 아이디어로 jsx가 등장.
+
+그냥 jsx 문법으로 만든 코드를 render 함수에 전달해본다.
+
+```jsx
+const vdom2 = <p>
+  <h1>react 만들기</h1>
+  <ul>
+    <li style="color:red">첫번째 아이템</li>
+    <li style="color:green">두번째 아이템</li>
+    <li style="color:blue">세번째 아이템</li>
+  </ul>
+</p>
+```
+
+그럼 React is not defined 에러남.
+
+코드는 웹팩으로 번들링 하고 있는데
+js 파일은 `바벨 로더`한테 전달되게끔 되어있다.
+
+트랜스 파일러인데 es5 이상의 코드를 아랫단계 버전으로 트랜스파일 해주는건데
+
+`babel-loader`에게 preset 즉, 어떤 변환을 하게 할거야 라는 setting값을 넘겨줬는데
+
+JS안에 포함되어있는 jsx를 react가 갖고있는 `createElement`라고 하는 함수 호출 구문으로 바꿔주는 역할을 포함한다.
+
+preset-react를 webpack.config에 설정해놨기 때문에 jsx가 createElement로 실제로는 변환이 되어 있을 것이다.
+
+그런데 왜 에러가 나느냐?
+
+변환된 코드는 아래와 같다.
+
+```js
+"use strict";
+
+/*#__PURE__*/React.createElement("p", null, /*#__PURE__*/React.createElement("h1", null, "react \uB9CC\uB4E4\uAE30"), /*#__PURE__*/React.createElement("ul", null, /*#__PURE__*/React.createElement("li", {
+  style: "color:red"
+}, "\uCCAB\uBC88\uC9F8 \uC544\uC774\uD15C"), /*#__PURE__*/React.createElement("li", {
+  style: "color:green"
+}, "\uB450\uBC88\uC9F8 \uC544\uC774\uD15C"), /*#__PURE__*/React.createElement("li", {
+  style: "color:blue"
+}, "\uC138\uBC88\uC9F8 \uC544\uC774\uD15C")));
+```
+
+여기서 React.createElement를 사용하는데 내 코드에 React가 없기 때문에 react가 없다는 에러가 나는 것.
+
+```js
+/* @jsx createElement */
+
+// 이 주석을 코드 상단에 추가해준다.
+
+```
+
+babel 안에 포함되어 있는 React의 JSX Transpiler가 옵션을 입력 받는다.
+
+코드안에 @jsx 구문을 포함시켜 놓으면 그걸 입력으로 받아서 저 변환 결과를 변경시킨다.
+
+default는 `React.createElement`인데
+
+위처럼 createElement로 바꿔주면 저 함수를 호출하게 된다는 것.
+
+이렇게 해주면 정상 렌더가 되느냐? -> 아직 안된다.
+
+이번엔 `Cannot convert undefined or null to object` 에러가 남.
+
+실제로 이 `babel`의 `Transpiler`가 jsx를 바꾸면서 props가 없으면 null로 반환하기 때문이다. createElement 함수에 props로 null을 전달해버린다.
+
+지금까지 직접 vdom을 생성해 전달할때는 props가 없으면 빈 객체를 전달했었는데 말이다.
+
+이 null 처리를 createElement 함수에서 처리해줘야 한다.
+
+```js
+// 인자로 props에 null이 들어와버리고 그걸 key로 쓰려고 하니 에러가 나는 것.
+export function createElement(tag, props, ...children) {
+    props = props || {} //방어 코드를 작성해준다.
+    return {
+        // tag:tag,
+        // props:props,
+        // children:children
+        //단축표현 사용
+        tag,
+        props,
+        children
+    }
+}
+```
+
+이렇게 되면 잘 작동한다 !
+
+## JSX는 별 게 아니다
+
+1. DOM을 다루기 귀찮기 때문에 간단한 객체를 만들고 그 객체를 만드는 헬퍼 함수를 만들었는데
+
+DOM보다 훨씬 간단한 구조물을 만들었다는 장점.
+
+2. 그것을 생성함에 있어 리터럴이나 함수를 이용한 방법은 UI의 구조를 파악하기 힘들고 작성하기도 힘든점을 마크업 형태로 구조파악, 작성도 쉽게함.
+
+이런거다.
+
+이렇게 jsx만 도입했는데도 react와 상당히 비슷해졌다.
+
+```js
+// app.js
+
+/* @jsx createElement */
+import { render, createElement } from "./react";
+
+const vdom2 = <p>
+  <h1>react 만들기</h1>
+  <ul>
+    <li style="color:red">첫번째 아이템</li>
+    <li style="color:green">두번째 아이템</li>
+    <li style="color:blue">세번째 아이템</li>
+  </ul>
+</p>
+
+render(vdom2, document.querySelector('#root'))
+
+```
+
+여기서.. createElement가 사용되지 않으니 import에서 빼버리면 어떻게 될까?
+
+에러가 난다. 왜일까?
+
+실제로 실행은 번들 파일이 실행이 된다.
+
+그 파일에는 `jsx`가 `createElement` 함수 호출 구문으로 바뀌어 있다.
+
+그래서 코드상에서 쓰이지 않지만 꼭 import 해줘야한다.
+
+똑같은 제약 사항이 react에도 있다.
+
+React가 코드상에서 쓰이지 않아도 상단에 import React 해주는 이유이다.
