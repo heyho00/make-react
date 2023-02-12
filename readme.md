@@ -160,3 +160,9 @@ entry: './src/app.js', // 이렇게 수정해준다.
 
 render(vdom, document.querySelector('#root'))
 ```
+
+vdom을 만들었는데,.
+
+세개의 속성을 가진 객체의 단순 반복이라는 점을 이용해
+
+세 속성을 가진 객체를 생성하는 함수를 만들어 반복 호출해 vdom 구조를 만들어 볼 수 있겠다.
