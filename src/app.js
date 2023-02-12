@@ -7,12 +7,16 @@ function Title(props) {
   )
 }
 
+function Item(props) {
+  return <li style={`color:${props.color}`}>{props.children}</li>
+}
+
 const vdom2 = <p>
   <Title>react 잘 만들기</Title>
   <ul>
-    <li style="color:red">첫번째 아이템</li>
-    <li style="color:green">두번째 아이템</li>
-    <li style="color:blue">세번째 아이템</li>
+    <Item color="red">first 아이템</Item>
+    <Item color="green">second 아이템</Item>
+    <Item color="blue">third 아이템</Item>
   </ul>
 </p>
 

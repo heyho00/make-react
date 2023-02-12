@@ -369,3 +369,15 @@ jsx로 html처럼 짜여진 코드가 주는 장점이 더 많다.
 사용자 컴포넌트에 props, children을 넘겨 사용할 수 있도록
 
 helper 함수인 createElement를 수정해줬다. commit 변경사항 보면됨.
+
+<br>
+
+## li tag
+
+```js
+function Item(props) {
+  return <li style={`color:${props.color}`}>{props.children}</li>
+}
+```
+
+props를 넘겨 이용할 수 있도록 createElement 함수를 만들어놨기 때문에 바로 적용된다.
