@@ -498,3 +498,120 @@ createElement 함수 내부에서 class형을 입력받았을때 처리를 해�
 클래스 컴포넌트는 인스턴스를 만들고 컴포넌트가 삭제될때까지 유지하면서 렌더함수를 호출하는 식으로
 
 디자인 되어있다 정도로 알고 넘어가자.
+
+<br>
+
+## Hook 원리와 제약
+
+react 16.8 이전엔 class 컴포넌트만 state를 가질 수 있었다.
+
+function형 컴포넌트는 함수기 때문에 호출될 때마다 모든것이 리셋되는 개념이었기 때문에 state를 가질 수 없었다.
+
+그래도 함수형 컴포넌트도 상태를 갖고싶으니, 개발하게된게 `hook`이다.
+
+원래대로라면 되지 않을 동작을 되게하면, 그에 따른 제약이 있기 마련이다.
+
+1. 최상위 에서만 hook을 호출해야함.
+
+반복문, 조건문, 중첩된 함수 내에서 Hook을 호출하지 마시오.
+
+2. 오직 react 함수 내에서 hook을 호출하시오.
+
+react 함수 컴포넌트, custom hook에서 훅을 호출하시오.
+
+hook이 호출되는 순서에 의존한다, 모든 렌더링에서 Hook의 호출 순서는 같기 때문에
+
+예시가 올바르게 작동한다.
+
+여기까지의 문장을 코드로 보자. 실제로 실행이 제대로 되는 코드는 아니다.
+
+주석위주로 읽으며 컨셉을 이해해보자.
+
+```js
+
+
+// 리액트는 훅과 관련된 배열을 내부적으로 갖고있다고 예상함.
+const hooks = []
+// createElement 객체가 만들어지는 지점에 저 훅 배열을 세팅
+
+//index를 관리할 값
+let currentComponent = 0
+
+export class Component {
+    constructor(props) {
+        this.props = props;
+    }
+}
+
+export function createDOM(node) {
+    if (typeof node === 'string') {
+        return document.createTextNode(node);
+    }
+    const element = document.createElement(node.tag);
+    Object.entries(node.props)
+        .forEach(([name, value]) => element.setAttribute(name, value))
+    node.children
+        .map(createDOM)
+        .forEach(element.appendChild.bind(element));
+    return element;
+}
+
+
+function makeProps(props, children) {
+    return {
+        ...props,
+        children: children.length === 1 ? children[0] : children,
+    }
+}
+
+
+function useState(initValue) {
+    let position = currentComponent - 1
+
+    if (!hooks[position]) {
+        hooks[position] = initValue
+    }
+    const modifier = nextValue => {
+        hooks[position] = nextValue
+    }
+    return [hooks[position], modifier]
+}
+
+
+export function createElement(tag, props, ...children) {
+    props = props || {}
+
+    if (typeof tag === 'function') {
+        if (tag.prototype instanceof Component) {
+            const instance = new tag(makeProps(props, children))
+            return instance.render()
+        }
+
+        hooks[currentComponent] = null
+        // tag 가 실행되기전, (함수가 만들어지기 전에 hooks를 세팅해준다.)
+        //createElement가 호출될 때마다 Component 하나가 만들어진다. 그래서
+        currentComponent++
+        // 여기서 ++를 해줬기 때문에 이 안에서 또 useState 불러야 하는데
+        // 그래서 useState 안에서 position으로 -1을 준 값을 준다.
+
+        //핵심.
+        // tag 함수 컴포넌트가 호출된 다음에 훅이 함수 안에서 호출돼서 index가 맞아진다는 것!
+        // 그래서 순서 보장이 매우 중요하다.
+        // 순서 보장은 createElement로 만들어진 객체 순서 메커니즘과 맞물려있다.
+        // 함수는 실제로 상태를 가질 수 없지만 index 위치값 기반의 외부 상태에 값을 저장해놓고
+        // 마치 그 함수가 상태를 저장하는 것 처럼 효과를 내는 마법의 원리인 것이다.
+        // 그래서 hook을 써야할 위치가 제약이 있는 것이다.
+
+        if (children.length) {
+            return tag(makeProps(props, children))
+        } else {
+            return tag(props)
+        }
+    }
+    return { tag, props, children }
+}
+
+export function render(vdom, container) {
+    container.appendChild(createDOM(vdom));
+}
+```
