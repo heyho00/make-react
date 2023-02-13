@@ -1,4 +1,11 @@
 
+
+export class Component {
+    constructor(props) {
+        this.props = props;
+    }
+}
+
 export function createDOM(node) {
     if (typeof node === 'string') {
         return document.createTextNode(node);
@@ -12,18 +19,29 @@ export function createDOM(node) {
     return element;
 }
 
+
+function makeProps(props, children) {
+    return {
+        ...props,
+        children: children.length === 1 ? children[0] : children,
+    }
+}
+
 /**실제 node나 element를 만드는게 아니라 객체를 만드는 함수 */
 export function createElement(tag, props, ...children) {
     props = props || {}
 
     if (typeof tag === 'function') {
-        if (children.length) {
-            return tag({
-                ...props,
-                children: children.length === 1 ? children[0] : children
-            })
+        if (tag.prototype instanceof Component) {
+            const instance = new tag(makeProps(props, children))
+            return instance.render()
+        } else {
+            if (children.length) {
+                return tag(makeProps(props, children))
+            } else {
+                return tag(props)
+            }
         }
-        return tag(props)
     } else {
         return { tag, props, children }
     }
